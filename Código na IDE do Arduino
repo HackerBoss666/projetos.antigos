@@ -1,0 +1,161 @@
+/* Projeto: Radar
+ 
+ por: Vinicius Santana Santos, Lucas C.B, Lucas Mateus Cavalcante
+ ultima vez editado: 31/10/2016
+ 
+ */
+
+// Inclui a biblioteca Servo
+#include <Servo.h>
+
+// Define trig e echo pinos do sensor ultra-sônico
+const int trigPin = 5;
+const int echoPin = 6;
+
+const int ledAzul = 9;  //refere-se ao pino digital(PWM) 9
+const int ledVerde = 10; //refere-se ao pino digital(PWM) 10
+const int ledVermelho = 11; //refere-se ao pino digital(PWM) 11
+
+// Variáveis para a duração e a distância do pulso da onda que foi percorrido
+long duracao;
+int distancia;
+
+// Cria um objecto Servo para controle do servomotor
+Servo meuServo; 
+
+void setup() {
+  pinMode(trigPin, OUTPUT); // Define o trigPin como uma saída
+  pinMode(echoPin, INPUT); // Define o echoPin como um entrada
+  //Definindo os pinos digitais(PWM) (9, 10, 11) como de saída.
+  pinMode(ledAzul, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+  pinMode(ledVermelho, OUTPUT);
+  Serial.begin(9600);
+  meuServo.attach(12); // Definindo em qual pino o servo motor está ligado
+}
+void loop() {
+// Gira o servo motor de 15 a 165 graus
+  for (int i = 15; i <= 165; i++) {
+    meuServo.write(i);
+    delay(30);
+    distancia = calcularDistancia(); 
+    // Chama uma função para calcular a distância medida pelo sensor de ultrassonico para cada grau
+
+    Serial.print(i); // Envia o atual grau na porta serial
+    Serial.print(","); // Envia carácter adicional à direita próximo ao valor anterior necessário mais tarde na IDE processamento para indexação
+    Serial.print(distancia); // Envia o valor da distância à porta serial
+    Serial.print("."); // Envia carácter adicional à direita próximo ao valor anterior necessário mais tarde na IDE processamento para indexação
+
+    if (distancia <= 39.97 && distancia > 34.26) { //separa-se o valor da distânica em que foi detectado um objeto em 7 camadas ou aproximadamente 40|7
+      digitalWrite(ledAzul, HIGH); // definindo os estados dos pinos para o led acender Azul
+      digitalWrite(ledVerde,LOW);
+      digitalWrite(ledVermelho,LOW);
+    }
+    else if (distancia <= 34.26 && distancia > 28.55)
+    {
+      digitalWrite(ledAzul, LOW); // definindo os estados dos pinos para o led ficar aceso em Verde
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho,LOW);
+    }
+    else if (distancia <= 28.55 && distancia > 22.84) 
+    {
+       digitalWrite(ledAzul, LOW); // definindo os estados dos pinos para o led ficar aceso em Vermelho
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, HIGH);
+    }
+    else if (distancia <= 22.84 && distancia > 17.13)
+    {
+      digitalWrite(ledAzul, HIGH);  // definindo os estados dos pinos para o led ficar aceso na mistura das tres cores(R,G,B)
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho, HIGH);
+    }
+    else if (distancia <= 17.13 && distancia > 11.42) 
+    {
+      digitalWrite(ledAzul, HIGH); // definindo os estados dos pinos para o led ficar aceso em Cyan
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho, LOW);
+    }
+    else if (distancia <= 11.42 && distancia > 5.71) 
+    {
+      digitalWrite(ledAzul, LOW); // definindo os estados dos pinos para o led ficar aceso em Amarelo
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho, HIGH);
+    }
+    else if (distancia <= 5.71 && distancia > 0) 
+    {
+      digitalWrite(ledAzul, HIGH); // definindo os estados dos pinos para o led ficar aceso em Magenta
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, HIGH);
+    }
+    else { // caso não seja detectado um objeto
+      digitalWrite(ledAzul, LOW); // definindo os estados dos pinos para o led ficar totalmente desligado
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, LOW);
+    }
+  }
+
+// Repete as linhas anteriores de 165 para 15 graus
+  for (int i = 165; i > 15; i--) {
+    meuServo.write(i);
+    delay(30);
+    distancia = calcularDistancia();
+    Serial.print(i);
+    Serial.print(",");
+    Serial.print(distancia);
+    Serial.print(".");
+
+if (distancia <= 39.97 && distancia > 34.26) {
+      digitalWrite(ledAzul, HIGH);
+      digitalWrite(ledVerde,LOW);
+      digitalWrite(ledVermelho,LOW);
+    }
+    else if (distancia <= 34.26 && distancia > 28.55)
+    {
+      digitalWrite(ledAzul, LOW);
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho,LOW);
+    }
+    else if (distancia <= 28.55 && distancia > 22.84) {
+      digitalWrite(ledAzul, LOW);
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, HIGH);
+    } else if (distancia <= 22.84 && distancia > 17.13) {
+      digitalWrite(ledAzul, HIGH);
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho, HIGH);
+    }
+    else if (distancia <= 17.13 && distancia > 11.42) {
+      digitalWrite(ledAzul, HIGH);
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho, LOW);
+    }
+    else if (distancia <= 11.42 && distancia > 5.71) {
+      digitalWrite(ledAzul, LOW);
+      digitalWrite(ledVerde, HIGH);
+      digitalWrite(ledVermelho, HIGH);
+    }
+    else if (distancia <= 5.71 && distancia > 0) {
+      digitalWrite(ledAzul, HIGH);
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, HIGH);
+    }
+    else {
+      digitalWrite(ledAzul, LOW);
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(ledVermelho, LOW);
+    }
+  }
+}
+// Função para calcular a distância medida pelo sensor de ultrassonico
+int calcularDistancia() {
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+// Define o trigPin em estado HIGH para 10 microssegundos
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duracao = pulseIn(echoPin, HIGH);// Lê o ehoPin, retorna a onda tempo de viagem de som em microssegundos
+  distancia = duracao * 0.034 / 2;
+  return distancia; //na função é retornado o  valor da distancia que a onda percorreu
+}
