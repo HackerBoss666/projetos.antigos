@@ -1,0 +1,286 @@
+/* Projeto: Radar com LED multicolorido
+ 
+ por: Vinicius Santana Santos, Lucas C.B, Lucas Mateus Cavalcante
+ ultima vez editado: 31/10/2016
+ 
+ */
+import cc.arduino.*;
+import processing.serial.*; // Biblioteca de importação para comunicação serial
+import java.awt.event.KeyEvent; // Biblioteca de importação para a leitura dos dados da porta serial
+import java.io.IOException;
+Serial myPort; // Define objeto Serial
+
+// Define as variáveis
+String angulo="";
+String distancia="";
+String data="";
+
+int iAngulo, iDistancia;
+int index1=0;
+int index2=0;
+int posicaox, posicaoy, altura, largura;
+int ativar;
+int contar;
+int intervalo= 10000;
+
+float x2, y2;
+
+PImage im1;
+PImage im2;
+PImage im3;
+PImage im4;
+
+PFont font1;
+
+void setup()
+{
+
+  myPort = new Serial(this, "COM4", 9600); // Começa a comunicação Serial, indentificando a porta, que no caso é COM4.
+  myPort.bufferUntil('.'); // Lê os dados da porta serial até o caractere '.'. Então, na verdade, ele lê o seguinte: ângulo, distância.
+  size(1201, 740);
+  smooth();
+  background(0);
+
+  posicaox= 600;
+  posicaoy= 600;
+  altura= 1200;
+  largura= 1200;
+}
+
+void draw()
+{
+
+  font1= loadFont("GOST_Common-50.vlw"); /* Carrega uma fonte .vlw formatado em um objeto PFont. Criar uma fonte .vlw, selecionando "Criar Fonte ..." no menu Ferramentas. 
+  Esta ferramenta cria uma textura para cada caractere alfanumérico e, em seguida, adiciona-os como um arquivo .vlw a pasta de dados do esboço atual. Funciona da
+  seguinte forma loadFont(filename.format)*/
+  im1 = loadImage("ledoff.png");/* Carrega uma imagem em uma variável do tipo PImage. Quatro tipos de imagens (.gif, .jpg, .tga, .png) 
+  imagens podem ser carregadas. Para carregar corretamente, as imagens devem estar localizados no diretório de dados do esboço atual. Funciona da seguinte forma
+  loadImage(filename.format)*/
+  im2 = loadImage("ledon.png");
+  im3 = loadImage("radar.png");
+  im4 = loadImage("spinning-beachball-of-death-mac.png");
+  textFont(font1); /* Define a fonte atual que será desenhado com a função text (). As fontes devem ser criadas para processamento com CreateFont () ou carregados 
+  com LoadFont () antes de poderem ser usadas. A fonte definida por meio TextFont() será utilizado em todas as chamadas subsequentes para a função text ().*/
+  background(0);
+
+  if (millis()>intervalo) {
+    desenharRadar(); // Enunciação das funções. 
+    desenharLinha();
+    desenharTexto();
+    desenharTexto2();
+  } else {
+    apres();
+  }
+}
+void serialEvent (Serial myPort) { // Começa a ler dados a partir da porta serial.
+  // Lê os dados da porta serial até o caractere '.' e coloca-o na variável String "data".
+  data = myPort.readStringUntil('.');
+  data = data.substring(0, data.length()-1);
+
+  index1 = data.indexOf(","); // Encontra o caractere ',' e coloca-a na variável "index1".
+  angulo= data.substring(0, index1); // Ler os dados de posição "0" para a posição da variável "index1" ou esse é o valor do ângulo a placa Arduino enviados à porta serial.
+  distancia= data.substring(index1+1, data.length()); // Lê os dados a partir da posição "index1" para o fim do ciclo de dados que é o valor da distância.
+
+  // Converte uma variável tipo String para tipo int, por exemplo
+  iAngulo = int(angulo);
+  iDistancia = int(distancia);
+}
+
+void apres()
+{ // Função que exibe a tela inicial.
+  background(0); /* A função de background() define a cor usada para o fundo da janela de processamento. O fundo padrão é cinza claro. 
+   Esta função é geralmente utilizada dentro de draw () para limpar a janela de exibição no início de cada quadro, mas ele pode ser usado dentro do setup () 
+   para definir o plano de fundo no primeiro quadro da animação ou se o backgound só precisa ser definido uma vez.
+   Define uma cor em valores 0<x<255, por exemplo backgroung(x);*/
+  textSize(48); /* Define o tamanho da fonte atual. Este tamanho será utilizado em todas as chamadas subsequentes para a função text ().
+  Tamanho da fonte é medida em unidades de pixels.*/
+  strokeWeight(200); // Define a largura do traçado usado para linhas, pontos, e das bordas em torno de formas. Todas as larguras são definidas em unidades de pixels.
+  fill(random(255), random(255), random(255));/*Define a cor usada para preencher formas. Por exemplo, se você executar preencher (204, 102, 0), 
+   todas as formas subsequentes será preenchido com laranja. Esta cor é ou especificados em termos de cor RGB ou HSB dependendo do colorMode escolhido (). 
+   O espaço de cor padrão é RGB, com cada valor no intervalo de 0 a 255.*/
+  text("Projeto: Radar", (width/2)-150, (height/2)-250); /*Desenha o texto para a tela. Exibe a informação especificada no primeiro parâmetro na tela na 
+   posição especificada pelos parâmetros adicionais.*/
+  image(im3, (width/2)-215, 130); // A função de image() desenha uma imagem à janela de exibição.
+  if (millis()<intervalo && millis()>2000) { // usa-se a função millis() que conta os Milissegundos decorridos desde o início do programa para criar um intervalo de ativação
+    image(im4, 1080, 620);
+  }
+}
+
+void desenharRadar() { // Chama a funçào para desenhar o fundo da tela do radar.
+  if (iDistancia>40) { // Diferencia as "camadas" de sensoriamento em 40|5 para fazer colorir 5 "arcos" na tela em duas situações "ativado" ou "não ativado" o pino echo.
+    noFill(); /*Desabilita o preenchimento geometria. Se ambos noStroke () e nofill () é chamado, nada será desenhado na tela.*/
+    stroke(30, 250, 60); /* Define a cor usada para desenhar linhas e bordas em torno das formas. 
+     Esta cor é ou especificados em termos de cor RGB ou HSB dependendo do colorMode escolhido ().
+     O espaço de cor padrão é RGB, com cada valor no intervalo de 0 a 255.*/
+    strokeWeight(5);
+    ellipse( posicaox, posicaoy, largura, altura); /* Desenhar uma elipse (oval) para a tela. Uma elipse com igual largura e altura é um círculo. 
+    ellipse(x0, y0, largura, altura);*/
+    ellipse( posicaox, posicaoy, largura-240, altura-240);
+    ellipse(posicaox, posicaoy, largura-480, altura-480);
+    ellipse(posicaox, posicaoy, largura-720, altura-720);
+    ellipse(posicaox, posicaoy, largura-960, altura-960);    
+    line( posicaox, posicaoy, posicaox, 0); /* Desenha uma linha (um caminho direto entre dois pontos) para a tela. A versão de linha () com quatro parâmetros 
+    desenha a linha em 2D. Para colorir uma linha, use a função stroke(). Funciona da seguinte forma line(x1,y1,x2,y2); */
+    line( posicaox, posicaoy, 0, 0);
+    line( posicaox, posicaoy, largura, 0);
+    line( largura, posicaoy, largura, 0);
+    line( largura, 0, 0, 0);
+    line(0, 0, 0, posicaoy);
+    line( 0, posicaoy, largura, posicaoy);
+  } else if (iDistancia>32) {
+    noFill();
+    stroke(250, 0, 0);
+    strokeWeight(5);
+    ellipse( posicaox, posicaoy, largura, altura);
+    stroke(30, 250, 60);
+    ellipse( posicaox, posicaoy, largura-240, altura-240);
+    ellipse(posicaox, posicaoy, largura-480, altura-480);
+    ellipse(posicaox, posicaoy, largura-720, altura-720);
+    ellipse(posicaox, posicaoy, largura-960, altura-960);  
+    line( posicaox, posicaoy, posicaox, 0);
+    line( posicaox, posicaoy, 0, 0);
+    line( posicaox, posicaoy, largura, 0);
+    line( largura, posicaoy, largura, 0);
+    line( largura, 0, 0, 0);
+    line(0, 0, 0, posicaoy);
+    line( 0, posicaoy, largura, posicaoy);
+  } else if (iDistancia>24) {
+    noFill();
+    stroke(250, 0, 0);
+    strokeWeight(5);
+    ellipse( posicaox, posicaoy, largura, altura);
+    ellipse( posicaox, posicaoy, largura-240, altura-240);
+    stroke(30, 250, 60);
+    ellipse(posicaox, posicaoy, largura-480, altura-480);
+    ellipse(posicaox, posicaoy, largura-720, altura-720);
+    ellipse(posicaox, posicaoy, largura-960, altura-960); 
+    line( posicaox, posicaoy, posicaox, 0);
+    line( posicaox, posicaoy, 0, 0);
+    line( posicaox, posicaoy, largura, 0);
+    line( largura, posicaoy, largura, 0);
+    line( largura, 0, 0, 0);
+    line(0, 0, 0, posicaoy);
+    line( 0, posicaoy, largura, posicaoy);
+  } else if (iDistancia>16) {
+    noFill();
+    stroke(250, 0, 0);
+    strokeWeight(5);
+    ellipse( posicaox, posicaoy, largura, altura);
+    ellipse( posicaox, posicaoy, largura-240, altura-240);
+    ellipse(posicaox, posicaoy, largura-480, altura-480);
+    stroke(30, 250, 60);
+    ellipse(posicaox, posicaoy, largura-720, altura-720);
+    ellipse(posicaox, posicaoy, largura-960, altura-960);
+    line( posicaox, posicaoy, posicaox, 0);
+    line( posicaox, posicaoy, 0, 0);
+    line( posicaox, posicaoy, largura, 0);
+    line( largura, posicaoy, largura, 0);
+    line( largura, 0, 0, 0);
+    line(0, 0, 0, posicaoy);
+    line( 0, posicaoy, largura, posicaoy);
+  } else if (iDistancia>8) {
+    noFill();
+    stroke(250, 0, 0);
+    strokeWeight(5);
+    ellipse( posicaox, posicaoy, largura, altura);
+    ellipse( posicaox, posicaoy, largura-240, altura-240);
+    ellipse(posicaox, posicaoy, largura-480, altura-480);
+    ellipse(posicaox, posicaoy, largura-720, altura-720);
+    stroke(30, 250, 60);
+    ellipse(posicaox, posicaoy, largura-960, altura-960);
+    line( posicaox, posicaoy, posicaox, 0);
+    line( posicaox, posicaoy, 0, 0);
+    line( posicaox, posicaoy, largura, 0);
+    line( largura, posicaoy, largura, 0);
+    line( largura, 0, 0, 0);
+    line(0, 0, 0, posicaoy);
+    line( 0, posicaoy, largura, posicaoy);
+  } else if (iDistancia>0) {
+    noFill();
+    stroke(250, 0, 0);
+    strokeWeight(5);
+    ellipse( posicaox, posicaoy, largura, altura);
+    ellipse( posicaox, posicaoy, largura-240, altura-240);
+    ellipse(posicaox, posicaoy, largura-480, altura-480);
+    ellipse(posicaox, posicaoy, largura-720, altura-720);
+    ellipse(posicaox, posicaoy, largura-960, altura-960);
+    stroke(30, 250, 60);
+    line( posicaox, posicaoy, posicaox, 0);
+    line( posicaox, posicaoy, 0, 0);
+    line( posicaox, posicaoy, largura, 0);
+    line( largura, posicaoy, largura, 0);
+    line( largura, 0, 0, 0);
+    line(0, 0, 0, posicaoy);
+    line( 0, posicaoy, largura, posicaoy);
+  } else {
+    noFill();
+    stroke(30, 250, 60);
+    strokeWeight(5);
+    ellipse( posicaox, posicaoy, largura, altura);
+    ellipse( posicaox, posicaoy, largura-240, altura-240);
+    ellipse(posicaox, posicaoy, largura-480, altura-480);
+    ellipse(posicaox, posicaoy, largura-720, altura-720);
+    ellipse(posicaox, posicaoy, largura-960, altura-960);  
+    line( posicaox, posicaoy, posicaox, 0);
+    line( posicaox, posicaoy, 0, 0);
+    line( posicaox, posicaoy, largura, 0);
+    line( largura, posicaoy, largura, 0);
+    line( largura, 0, 0, 0);
+    line(0, 0, 0, posicaoy);
+    line( 0, posicaoy, largura, posicaoy);
+  }
+}
+
+void desenharLinha() {
+  // Desenha a linha rotativa do radar, esta que representa a rotação do servomotor. usa a função cos() e sin() para rotacionar x2 e y2 das linhas.
+  x2= 1000*cos(radians(iAngulo))+600; /* cos() calcula o cosseno de um ângulo. Esta função espera que os valores do parâmetro de ângulo para ser fornecida 
+  em radianos (valores de 0 a pi * 2). Os valores são devolvidos na faixa de -1 a 1.*/
+  y2= (-1000*sin(radians(iAngulo))+600); /* sin() calcula o seno de um ângulo. Esta função espera que os valores do parâmetro de ângulo para ser fornecida 
+  em radianos (valores 0-6,28). Os valores são devolvidos na faixa de -1 a 1. */
+
+  if (iDistancia>40) { 
+    strokeWeight(9);
+    stroke(30, 250, 100); 
+    line(posicaox, posicaoy, x2, y2); // x2 e y2 ficam variando de acordo com a sua fórmula determinada. 
+    ativar=0;
+  } else {
+    strokeWeight(9);
+    stroke(250, 0, 250);
+    line(posicaox, posicaoy, x2, y2);
+    ativar=ativar+1;
+  }
+}
+
+void desenharTexto() { // Desenha principalmente os textos sobre a base do radar(a parte inferior com o fundo azul).
+  if (ativar==1) {
+    contar=contar+1; // Variável que conta o número de ativações.
+  }
+  if (iAngulo==165) { // Zera a variável contar.
+    contar=0;
+  }
+  stroke(0, 0, 70);
+  strokeWeight(200);
+  fill(30, 250, 60);
+  line(0, 703, 1200, 703);
+  text("Angulo: ", 670, 645);
+  text(iAngulo, 850, 645);
+  text("Objeto: ", 0, 645);
+  text("Qtd. de Ativacoes: " + contar, 0, 710);
+  if (iDistancia<40) {
+    text("Distancia: "+iDistancia+" cm", 670, 710);
+    image(im2, 150, 607);
+  } else {
+    text("Distancia: __ cm", 670, 710);
+    image(im1, 150, 607);
+  }
+}
+
+void desenharTexto2() { /* Desenha os textos que mostram a que proporção os "arcos" foram dividos(40|5), assim a cada "arco" colorido, indica a que distância foi encontrado o objeto. */
+
+  textSize(24);
+  fill(30, 250, 60);
+  text("8cm", 730, 590);
+  text("16cm", 850, 590);
+  text("24cm", 970, 590);
+  text("32cm", 1090, 590);
+}
